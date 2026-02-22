@@ -1,3 +1,5 @@
+from .board import Board
+
 class Console(Board):
     def __init__(self):
         super().__init__()
@@ -12,3 +14,6 @@ class Console(Board):
         if super().view_side == "b":
             for i in range(8):
                 print(f"{self.board[i]}")
+
+    def play_chess(self):
+        pass

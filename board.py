@@ -32,14 +32,15 @@ class Board:
         self.view_side = "w"
         self.fen_notation = ""
         self.turn = "w"
+        self.move_lock = True
         self.white_king_position = "D1"
         self.black_king_position = "D8"
         self.white_king_check = False
         self.black_king_check = False
         self.last_move = {
-            "From": "",
-            "To": "",
-            "Piece": ""
+            "From": "  ",
+            "To": "  ",
+            "Piece": "  "
         }
 
     # Return board (seld.board)
@@ -65,6 +66,13 @@ class Board:
 
     def get_LETTER_TO_NAME(self):
         return self.LETTER_TO_NAME
+    
+    def get_move_lock(self):
+        return self.move_lock
+    
+    def set_move_lock(self, option):
+        if option == False or option == True:
+            self.move_lock == option
 
     def get_fen_notation(self):
         return self.fen_notation
@@ -83,16 +91,6 @@ class Board:
     def split_position(self, position):
         return position[0], int(position[1])
 
-    # Returns color of the piece from the board position
-    def piece_color(self, position):
-        piece = self.get_piece(position)
-        return piece[0]
-    
-    # Return the piece symbol of the position
-    def piece_symbol(self, position):
-        piece = self.get_piece(position)
-        return piece[1]
-
     # Return board position piece
     def get_position(self, position):
         letter, number = self.split_position(position)
@@ -105,31 +103,44 @@ class Board:
         letter_number = self.find_number(letter)
         self.board[number - 1][letter_number - 1] = piece
 
+    # Set a last move (self.last_move)
+    def set_last_move(self, old, new):
+        self.last_move["From"] = old
+        self.last_move["To"] = new
+        self.last_move["Piece"] = self.get_position(new)
+
     # Move a piece
     def move_piece(self, old, new):
         self.set_position(new, self.get_position(old))
         self.set_position(old, "  ")
+        self.set_last_move(old, new)
+
+    # Returns color of the piece from the board position
+    def piece_color(self, position):
+        piece = self.get_position(position)
+        return piece[0]
+    
+    # Return the piece symbol of the position
+    def piece_symbol(self, position):
+        piece = self.get_position(position)
+        return piece[1]
 
     def check_king_check(self, movements, position):
         if self.turn == "w":
             for move in movements:
-                if move == self.white_king_position
+                if move == self.white_king_position:
                     self.white_king_check = True
                     return True
 
-        if self.turn = "b":
+        if self.turn == "b":
             for move in movements:
-                if move == slef.black_king_position:
+                if move == self.black_king_position:
                     self.black_king_check == True
                     return True
 
         return False
 
     def find_rook_movements(self, position):
-        symbol = self.piece_symbol(position)
-        if symbol != "R":
-            return None
-        
         letter, number = self.split_position(position)
         movements = []
 
@@ -142,81 +153,64 @@ class Board:
         return movements
     
     def find_bishop_movements(self, position):
-        symbol = self.piece_symbol(position)
-        if symbol != "B":
-            return None
-        
         letter, number = self.split_position(position)
         letter_number = self.find_number(letter)
         movements = []
-
-        #later
-
-        '''
-        # Bishop positions top left
+        
+        # top left
         for i in range(1, 9):
-            for j in range(1, 9):
-                if (1 <= i >= 8) and (1 <= j >= 8):
-                    movements.append(self.find_letter(letter_number - 1) + str(number + j))
+            temp_letter_number = letter_number - i
+            temp_number = number + i
+            if (1 <= temp_letter_number <= 8) and (1 <= temp_number <= 8):
+                movements.append(self.find_letter(temp_letter_number) + str(temp_number))
 
-        # Bishop positions top right
+        # top right
         for i in range(1, 9):
-            for j in range(1, 9):
-                if (1 <= i >= 8) and (1 <= j >= 8):
-                    movements.append(self.find_letter(letter_number + 1) + str(number + 1))
+            temp_letter_number = letter_number + i
+            temp_number = number + i
+            if (1 <= temp_letter_number <= 8) and (1 <= temp_number <= 8):
+                movements.append(self.find_letter(temp_letter_number) + str(temp_number))
 
-        # Bishop positions bottom right
+        # bottom right
         for i in range(1, 9):
-            for j in range(1, 9):
-                letter_number + i
-                number - j
-                if (1 <= i >= 8) and (1 <= j >= 8):
-                    movements.append(self.find_letter(letter_number + 1) + str(number - j))
+            temp_letter_number = letter_number + i
+            temp_number = number - i
+            if (1 <= temp_letter_number <= 8) and (1 <= temp_number <= 8):
+                movements.append(self.find_letter(temp_letter_number) + str(temp_number))
 
-        # Bishop positions bottom left
+        # bottom left
         for i in range(1, 9):
-            for j in range(1, 9):
-                if (1 <= i >= 8) and (1 <= j >= 8):
-                    movements.append(self.find_letter(letter_number - 1) + str(number - j))
+            temp_letter_number = letter_number - i
+            temp_number = number - i
+            if (1 <= temp_letter_number <= 8) and (1 <= temp_number <= 8):
+                movements.append(self.find_letter(temp_letter_number) + str(temp_number))
 
         return movements
-        '''
         
     def find_knight_movements(self, position):
-        symbol = self.piece_symbol(position)
-        if symbol != "K":
-            return None
-        
         letter, number = self.split_position(position)
         letter_number = self.find_number(letter)
         movements = []
 
-        #knight math
-        temp = {}
-        temp[letter_number - 1] = number + 2
-        temp[letter_number + 2] = number + 1
-        temp[letter_number + 2] = number - 1
-        temp[letter_number + 1] = number + 2
-        temp[letter_number + 1] = number - 2
-        temp[letter_number - 1] = number - 2
-        temp[letter_number - 2] = number - 1
-        temp[letter_number - 2] = number + 1
+        # Knight math
+        temp = []
+        temp.append((letter_number - 1, number + 2))
+        temp.append((letter_number + 2, number + 1))
+        temp.append((letter_number + 2, number - 1))
+        temp.append((letter_number + 1, number + 2))
+        temp.append((letter_number + 1, number - 2))
+        temp.append((letter_number - 1, number - 2))
+        temp.append((letter_number - 2, number - 1))
+        temp.append((letter_number - 2, number + 1))
 
-        #check board bounds
-        for key, value in temp.items():
-            if ((1 <= key >= 8) == False) or ((1 <= value >= 8) == False):
-                del temp[key]
-            else:
+        # Check board bounds
+        for key, value in temp:
+            if (1 <= key <= 8) and (1 <= value <= 8):
                 movements.append(self.find_letter(key) + str(value))
 
         return movements
     
     def find_white_pond_movements(self, position):
-        symbol = self.piece_symbol(position)
-        color = self.piece_color(position)
-        if symbol != "P" or color != "w":
-            return None
-        
         letter, number = self.split_position(position)
         letter_number = self.find_number(letter)
         movements = []
@@ -230,31 +224,26 @@ class Board:
             movements.append(letter + str(4))
 
         if letter_number > 1:
-            if self.get_piece(position) != "  ":
+            if self.get_position(position) != "  ":
                 movements.append(self.find_letter(letter_number - 1) + str(number + 1))
 
         if letter_number < 9:
-            if self.get_piece(position) != "  ":
+            if self.get_position(position) != "  ":
                 movements.append(self.find_letter(letter_number + 1) + str(number + 1))
-                
-        if (self.last_move["Piece"] == "P" and
+        
+        if (self.last_move["Piece"] == "bP" and
             self.last_move["From"] == (self.find_letter(letter_number - 1) + str(7)) and
             self.last_move["To"] == (self.find_letter(letter_number - 1) + str(5))):
             movements.append(self.find_letter(letter_number - 1) + str(6))
 
-        if (self.last_move["Piece"] == "P" and
+        if (self.last_move["Piece"] == "bP" and
             self.last_move["From"] == (self.find_letter(letter_number + 1) + str(7)) and
             self.last_move["To"] == (self.find_letter(letter_number + 1) + str(5))):
             movements.append(self.find_letter(letter_number + 1) + str(6))
             
         return movements
 
-    def find_black_pond_movements(self, position):
-        symbol = self.piece_symbol(position)
-        color = self.piece_color(position)
-        if symbol != "P" or color != "w":
-            return None
-        
+    def find_black_pond_movements(self, position):   
         letter, number = self.split_position(position)
         letter_number = self.find_number(letter)
         movements = []
@@ -268,19 +257,19 @@ class Board:
             movements.append(letter + str(4))
 
         if letter_number > 1:
-            if self.get_piece(position) != "  ":
+            if self.get_position(position) != "  ":
                 movements.append(self.find_letter(letter_number - 1) + str(number + 1))
 
         if letter_number < 9:
-            if self.get_piece(position) != "  ":
+            if self.get_position(position) != "  ":
                 movements.append(self.find_letter(letter_number + 1) + str(number + 1))
                 
-        if (self.last_move["Piece"] == "P" and
+        if (self.last_move["Piece"] == "bP" and
             self.last_move["From"] == (self.find_letter(letter_number - 1) + str(2)) and
             self.last_move["To"] == (self.find_letter(letter_number - 1) + str(4))):
             movements.append(self.find_letter(letter_number - 1) + str(3))
 
-        if (self.last_move["Piece"] == "P" and
+        if (self.last_move["Piece"] == "bP" and
             self.last_move["From"] == (self.find_letter(letter_number + 1) + str(2)) and
             self.last_move["To"] == (self.find_letter(letter_number + 1) + str(4))):
             movements.append(self.find_letter(letter_number + 1) + str(3))
@@ -288,15 +277,13 @@ class Board:
         return movements
 
     def find_pond_movements(self, position):
-        symbol = self.piece_symbol(position)
         color = self.piece_color(position)
-        if symbol != "P":
-            return None
-
         movements = []
+
         if color == "w":
             movements = self.find_white_pond_movements(position)
-        else:
+        
+        if color == "b":
             movements = self.find_black_pond_movements(position)
 
         return movements

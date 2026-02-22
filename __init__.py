@@ -1,7 +1,7 @@
 from .board import Board
-from .console import Console
+from .console import Console as Board_Console
 
 __all__ = [
     "Board"
-    "Board.Console"
+    "Board_Console"
 ]
