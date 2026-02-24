@@ -17,7 +17,10 @@ def replace_print(movements):
     for move in movements:
         letter, number = game.split_position(move)
         letter_number = game.find_number(letter)
-        board[number - 1][letter_number - 1] = "//"
+        if board[number - 1][letter_number - 1] != "  ":
+            board[number - 1][letter_number - 1] = "--"
+        else:
+            board[number - 1][letter_number - 1] = "//"
     print_board(board)
         
 again = True
@@ -33,7 +36,7 @@ while again:
             print(game.get_fen_notation())
             old = input("Form: ")
             new = input("To: ")
-            if game.move_piece(old, new) == False: 
+            if game.move_piece(old, new) == False:
                 print("\nInvalid move")
 
         case "3":
