@@ -3,6 +3,7 @@ class Board:
         self.BOARD_WIDTH = 8
         self.BOARD_LENGTH = 8
         self.EMPTY_PIECE = "  "
+        self.PIECES = ["R", "N", "B", "Q", "K", "P"]
         self.LETTER_TO_NAME = {
             "R": "rook", "N": "knight", "B": "bishop",
             "Q": "queen", "K": "king", "P": "pawn"
@@ -19,14 +20,14 @@ class Board:
         }
 
         self.board = [
-            ["wR", "wN", "wB", "wQ", "wK", "wB", "wN", "wR"],
-            ["wP", "wP", "wP", "wP", "wP", "wP", "wP", "wP"],
+            ["wR", "wN", "wB", "wK", "wQ", "wB", "wN", "wR"],
+            ["wP", "wP", "wP", "wP", "wP", "wP", "wP", "wP"],   
             ["  ", "  ", "  ", "  ", "  ", "  ", "  ", "  "],
             ["  ", "  ", "  ", "  ", "  ", "  ", "  ", "  "],
             ["  ", "  ", "  ", "  ", "  ", "  ", "  ", "  "],
             ["  ", "  ", "  ", "  ", "  ", "  ", "  ", "  "],
             ["bP", "bP", "bP", "bP", "bP", "bP", "bP", "bP"],
-            ["bR", "bN", "bB", "bQ", "bK", "bB", "bN", "bR"]
+            ["bR", "bN", "bB", "bK", "bQ", "bB", "bN", "bR"]
         ]
 
         self.view_side = "w"
@@ -37,11 +38,7 @@ class Board:
         self.black_king_position = "D8"
         self.white_king_check = False
         self.black_king_check = False
-        self.last_move = {
-            "From": "  ",
-            "To": "  ",
-            "Piece": "  "
-        }
+        self.move_history = [] # list of {"From": "  ", "To": "  ", "Piece": "  "}
 
     # Return board (seld.board)
     def get_board(self):
@@ -66,7 +63,7 @@ class Board:
 
     def get_LETTER_TO_NAME(self):
         return self.LETTER_TO_NAME
-    
+
     def get_move_lock(self):
         return self.move_lock
     
@@ -86,6 +83,14 @@ class Board:
         for key, value in self.NUMBER_TO_LETTER.items():
             if value == letter:
                 return key
+            
+    def get_chess_notation(self, variable):
+        if isinstance(variable, tuple):
+            letter = self.find_letter(variable[0])
+            return letter + str(variable[1])
+        elif isinstance(variable, str):
+            return variable
+        return None
 
     # Splits the board position into letter and number
     def split_position(self, position):
@@ -103,21 +108,16 @@ class Board:
         letter_number = self.find_number(letter)
         self.board[number - 1][letter_number - 1] = piece
 
-    # Set a last move (self.last_move)
+    # Set a last move (self.move_history)
     def set_last_move(self, old, new):
-        self.last_move["From"] = old
-        self.last_move["To"] = new
-        self.last_move["Piece"] = self.get_position(new)
+        last_move = {"From": old, "To": new, "Piece": self.get_position(new)}
+        self.move_history.append(last_move)
 
-    # Move a piece
-    def move_piece(self, old, new):
-        try:
-            self.set_position(new, self.get_position(old))
-            self.set_position(old, "  ")
-            self.set_last_move(old, new)
-            return True
-        except Exception as e:
-            return False
+    # Gets the last (self.move_history)
+    def get_last_move(self):
+        if len(self.move_history) != 0:
+            return self.move_history[len(self.move_history) - 1]
+        return {"From": "  ", "To": "  ", "Piece": "  "}
 
     # Returns color of the piece from the board position
     def piece_color(self, position):
@@ -157,7 +157,7 @@ class Board:
                 break
             movements.append(move)
 
-        # Right
+        # Left
         for i in range(letter_number + 1, 9):
             move = self.find_letter(i) + str(number)
             if(self.get_position(move) != "  "):
@@ -173,7 +173,7 @@ class Board:
                 break
             movements.append(move)
 
-        # Left
+        # Right
         for i in range(letter_number - 1, 0, -1):
             move = self.find_letter(i) + str(number)
             if(self.get_position(move) != "  "):
@@ -188,7 +188,7 @@ class Board:
         letter_number = self.find_number(letter)
         movements = []
         
-        # up left
+        # up right
         for i in range(1, 9):
             temp_letter_number = letter_number - i
             temp_number = number + i
@@ -199,7 +199,7 @@ class Board:
                     break
                 movements.append(move)
 
-        # up right
+        # up left
         for i in range(1, 9):
             temp_letter_number = letter_number + i
             temp_number = number + i
@@ -210,7 +210,7 @@ class Board:
                     break
                 movements.append(move)
 
-        # down right
+        # down left
         for i in range(1, 9):
             temp_letter_number = letter_number + i
             temp_number = number - i
@@ -221,7 +221,7 @@ class Board:
                     break
                 movements.append(move)
 
-        # down left
+        # down right
         for i in range(1, 9):
             temp_letter_number = letter_number - i
             temp_number = number - i
@@ -272,24 +272,28 @@ class Board:
         if number == 2:
             movements.append(letter + str(4))
 
-        # Take
+        # Take right
         if letter_number > 1:
-            if self.get_position(self.find_letter(letter_number - 1) + str(number + 1)) != "  ":
-                movements.append(self.find_letter(letter_number - 1) + str(number + 1))
+            top_right = self.find_letter(letter_number - 1) + str(number + 1)
+            if self.get_position(top_right) != "  " and self.piece_color(self.get_position(top_right)) == "b":
+                movements.append(top_right)
 
+        # Take left
         if letter_number < 8:
-            if self.get_position(self.find_letter(letter_number + 1) + str(number + 1)) != "  ":
-                movements.append(self.find_letter(letter_number + 1) + str(number + 1))
-        
+            top_left = self.find_letter(letter_number + 1) + str(number + 1)
+            if self.get_position(top_left) != "  " and self.piece_color(self.get_position(top_left)) == "b":
+                movements.append(top_left)
+
         # En Passant
-        if (self.last_move["Piece"] == "bP" and
-            self.last_move["From"] == (self.find_letter(letter_number - 1) + str(7)) and
-            self.last_move["To"] == (self.find_letter(letter_number - 1) + str(5))) and int(self.last_move["To"][1]) == number:
+        last_move = self.get_last_move()
+        if (last_move["Piece"] == "bP" and
+            last_move["From"] == (self.find_letter(letter_number - 1) + str(7)) and
+            last_move["To"] == (self.find_letter(letter_number - 1) + str(5))) and int(last_move["To"][1]) == number:
             movements.append(self.find_letter(letter_number - 1) + str(6))
 
-        if (self.last_move["Piece"] == "bP" and
-            self.last_move["From"] == (self.find_letter(letter_number + 1) + str(7)) and
-            self.last_move["To"] == (self.find_letter(letter_number + 1) + str(5))) and int(self.last_move["To"][1]) == number:
+        if (last_move["Piece"] == "bP" and
+            last_move["From"] == (self.find_letter(letter_number + 1) + str(7)) and
+            last_move["To"] == (self.find_letter(letter_number + 1) + str(5))) and int(last_move["To"][1]) == number:
             movements.append(self.find_letter(letter_number + 1) + str(6))
             
         return movements
@@ -309,24 +313,28 @@ class Board:
         if number == 7:
             movements.append(letter + str(5))
 
-        # Take
+        # Take right
         if letter_number > 1:
-            if self.get_position(self.find_letter(letter_number - 1) + str(number - 1)) != "  ":
-                movements.append(self.find_letter(letter_number - 1) + str(number - 1))
+            top_right = self.find_letter(letter_number - 1) + str(number - 1)
+            if self.get_position(top_right) != "  " and self.piece_color(self.get_position(top_right)) == "w":
+                movements.append(top_right)
 
+        # Take left
         if letter_number < 8:
-            if self.get_position(self.find_letter(letter_number + 1) + str(number - 1)) != "  ":
-                movements.append(self.find_letter(letter_number + 1) + str(number - 1))
+            top_left = self.find_letter(letter_number + 1) + str(number - 1)
+            if self.get_position(top_left) != "  " and self.piece_color(self.get_position(top_left)) == "w":
+                movements.append(top_left)
         
         # En Passant
-        if (self.last_move["Piece"] == "wP" and
-            self.last_move["From"] == (self.find_letter(letter_number - 1) + str(2)) and
-            self.last_move["To"] == (self.find_letter(letter_number - 1) + str(4))) and int(self.last_move["To"][1]) == number:
+        last_move = self.get_last_move()
+        if (last_move["Piece"] == "wP" and
+            last_move["From"] == (self.find_letter(letter_number - 1) + str(2)) and
+            last_move["To"] == (self.find_letter(letter_number - 1) + str(4))) and int(last_move["To"][1]) == number:
             movements.append(self.find_letter(letter_number - 1) + str(3))
 
-        if (self.last_move["Piece"] == "wP" and
-            self.last_move["From"] == (self.find_letter(letter_number + 1) + str(2)) and
-            self.last_move["To"] == (self.find_letter(letter_number + 1) + str(4))) and int(self.last_move["To"][1]) == number:
+        if (last_move["Piece"] == "wP" and
+            last_move["From"] == (self.find_letter(letter_number + 1) + str(2)) and
+            last_move["To"] == (self.find_letter(letter_number + 1) + str(4))) and int(last_move["To"][1]) == number:
             movements.append(self.find_letter(letter_number + 1) + str(3))
             
         return movements
@@ -354,29 +362,25 @@ class Board:
     def find_king_movements(self, position):
         symbol = self.piece_symbol(position)
         color = self.piece_color(position)
-        
-        if symbol != "K":
-            return None
-        
-        if color == "w" and self.white_king_check:
-            return None
-        
-        if color == "b" and self.black_king_check:
-            return None
-
         letter, number = self.split_position(position)
         letter_number = self.find_number(letter)
         movements = []
 
+        if symbol != "K":
+            return movements
+        
+        if (color == "w" or color == "b") and self.white_king_check:
+            return movements
+
         # For easy conditioning to tell the bounds of the board
         up = (number + 1 < 9)
-        right = (letter_number + 1 < 9)
+        right = (letter_number - 1 < 9)
         down = (number - 1 > 0)
-        left = (letter_number - 1 < 9)
+        left = (letter_number + 1 < 9)
 
         # up left
         if up and left:
-            movements.append(self.find_letter(letter_number - 1) + str(number - 1))
+            movements.append(self.find_letter(letter_number + 1) + str(number + 1))
 
         # up
         if up:
@@ -384,15 +388,15 @@ class Board:
 
         # up right
         if up and right:
-            movements.append(self.find_letter(letter_number + 1) + str(number + 1))
+            movements.append(self.find_letter(letter_number - 1) + str(number + 1))
 
         # right
         if right:
-            movements.append(self.find_letter(letter_number + 1) + str(number))
+            movements.append(self.find_letter(letter_number - 1) + str(number))
 
         # down right
         if down and right:
-            movements.append(self.find_letter(letter_number + 1) + str(number - 1))
+            movements.append(self.find_letter(letter_number - 1) + str(number    - 1))
 
         # down
         if down:
@@ -400,15 +404,15 @@ class Board:
 
         # down left
         if down and left:
-            movements.append(self.find_letter(letter_number - 1) + str(number - 1))
+            movements.append(self.find_letter(letter_number + 1) + str(number - 1))
 
         # left
         if left:
-            movements.append(self.find_letter(letter_number - 1) + str(number))
+            movements.append(self.find_letter(letter_number + 1) + str(number))
 
         return movements
 
-    # Correlate the system to go to the correct movement finding functions based on position
+    # Has the system to go to the correct movement finding functions based on position's piece
     def find_movements(self, position):
         match self.piece_symbol(position):
             case "K":
@@ -423,3 +427,26 @@ class Board:
                 return self.find_knight_movements(position)
             case "P":
                 return self.find_pond_movements(position)
+            case _:
+                return []
+            
+    # Move a piece
+    def move_piece(self, old, new):
+        old = self.get_chess_notation(old)
+        new = self.get_chess_notation(new)
+        try:
+            if self.move_lock == True:
+                movements = self.find_movements(old)
+                if new in movements:
+                    self.set_position(new, self.get_position(old))
+                    self.set_position(old, "  ")
+                    self.set_last_move(old, new)
+                else:
+                    return False
+            else:
+                self.set_position(new, self.get_position(old))
+                self.set_position(old, "  ")
+                self.set_last_move(old, new)
+            return True
+        except Exception as e:
+            return False

@@ -1,6 +1,6 @@
-from board import Board
+from Chess import Board_Console as console
 
-game = Board()
+game = console()
 
 def print_board(board = game.board):
     if game.view_side == "w":
@@ -13,7 +13,7 @@ def print_board(board = game.board):
             print(f"{board[i]}")
 
 def replace_print(movements):
-    board = game.get_board().copy()
+    board = game.board().copy()
     for move in movements:
         letter, number = game.split_position(move)
         letter_number = game.find_number(letter)
