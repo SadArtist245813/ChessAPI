@@ -15,8 +15,7 @@ class Board:
         }
 
         self.NUMBER_TO_LETTER = {
-            8: "A", 7: "B", 6: "C", 5: "D",
-            4: "E", 3: "F", 2: "G", 1: "H"
+            1: "A", 2: "B", 3: "C", 4: "D", 5: "E", 6: "F", 7: "G", 8: "H"
         }
 
         self.board = [
@@ -30,14 +29,19 @@ class Board:
             ["bR", "bN", "bB", "bK", "bQ", "bB", "bN", "bR"]
         ]
 
+        self.starting_position = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 0"
         self.view_side = "w"
-        self.fen_notation = ""
         self.turn = "w"
         self.move_lock = True
+        
+        self.can_castle = { "K": True, "Q": True, "k": True, "q": True }
+        self.game_moves = 0
+        self.rule_50_move = 0
         self.white_king_position = "D1"
         self.black_king_position = "D8"
         self.white_king_check = False
         self.black_king_check = False
+
         self.move_history = [] # list of {"From": "  ", "To": "  ", "Piece": "  "}
 
     # Return board (seld.board)
@@ -45,19 +49,26 @@ class Board:
         return self.board
 
     # Change the side the board would be viewed in (self.view_side)
-    def set_view_side(self, option):
-        try:
-            option.lower()
-        except Exception as e:
-            return False
-
-        if option == "w" or option == "white":
-            self.view_side = "w"
+    def set_view_side(self, option=None):
+        if option == None:
+            if self.view_side == "w":
+                self.view_side = "b"
+            else:
+                self.view_side = "w"
             return True
+        else:
+            try:
+                option.lower()
+            except Exception as e:
+                return False
 
-        if option == "b" or option == "black":
-            self.view_side = "b"
-            return True
+            if option == "w" or option == "white":
+                self.view_side = "w"
+                return True
+
+            if option == "b" or option == "black":
+                self.view_side = "b"
+                return True
 
         return False
 
@@ -66,10 +77,21 @@ class Board:
 
     def get_move_lock(self):
         return self.move_lock
+
+    def set_move_lock(self, option=None):
+        if option == None:
+            if self.move_lock == True:
+                self.move_lock = False
+            else:
+                self.move_lock = True
+        else:
+            self.move_lock = option            
     
-    def set_move_lock(self, option):
-        if option == False or option == True:
-            self.move_lock = option
+    def set_turn(self, turn):
+        self.turn == turn
+
+    def get_turn(self):
+        return self.turn
 
     def get_fen_notation(self):
         return self.fen_notation
@@ -84,6 +106,7 @@ class Board:
             if value == letter:
                 return key
             
+    # Returns chess notations based on entered variable type. For easier API use.
     def get_chess_notation(self, variable):
         if isinstance(variable, tuple):
             letter = self.find_letter(variable[0])
@@ -264,37 +287,39 @@ class Board:
 
         # One forward
         if number < 8:
-            movements.append(letter + str(number + 1))
+            if self.get_position(letter + str(number + 1)) == "  ":
+                movements.append(letter + str(number + 1))
         else:
             return movements
 
         # Two forward
         if number == 2:
-            movements.append(letter + str(4))
+            if self.get_position(letter + str(4)) == "  ":
+                movements.append(letter + str(4))
 
         # Take right
         if letter_number > 1:
             top_right = self.find_letter(letter_number - 1) + str(number + 1)
-            if self.get_position(top_right) != "  " and self.piece_color(self.get_position(top_right)) == "b":
+            if self.get_position(top_right) != "  " and self.piece_color(top_right) == "b":
                 movements.append(top_right)
 
         # Take left
         if letter_number < 8:
             top_left = self.find_letter(letter_number + 1) + str(number + 1)
-            if self.get_position(top_left) != "  " and self.piece_color(self.get_position(top_left)) == "b":
+            if self.get_position(top_left) != "  " and self.piece_color(top_left) == "b":
                 movements.append(top_left)
 
         # En Passant
         last_move = self.get_last_move()
-        if (last_move["Piece"] == "bP" and
+        if (letter_number > 1 and last_move["Piece"] == "bP" and
             last_move["From"] == (self.find_letter(letter_number - 1) + str(7)) and
             last_move["To"] == (self.find_letter(letter_number - 1) + str(5))) and int(last_move["To"][1]) == number:
-            movements.append(self.find_letter(letter_number - 1) + str(6))
+            movements.append(self.find_letter(letter_number - 1) + str(6) + "e")
 
-        if (last_move["Piece"] == "bP" and
+        if (letter_number < 8 and last_move["Piece"] == "bP" and
             last_move["From"] == (self.find_letter(letter_number + 1) + str(7)) and
             last_move["To"] == (self.find_letter(letter_number + 1) + str(5))) and int(last_move["To"][1]) == number:
-            movements.append(self.find_letter(letter_number + 1) + str(6))
+            movements.append(self.find_letter(letter_number + 1) + str(6) + "e")
             
         return movements
 
@@ -305,41 +330,43 @@ class Board:
 
         # One forward
         if number > 1:
-            movements.append(letter + str(number - 1))
+            if self.get_position(letter + str(number - 1)) == "  ":
+                movements.append(letter + str(number - 1))
         else:
             return movements
 
         # Two forward
         if number == 7:
-            movements.append(letter + str(5))
+            if self.get_position(letter + str(5)) == "  ":
+                movements.append(letter + str(5))
 
         # Take right
         if letter_number > 1:
             top_right = self.find_letter(letter_number - 1) + str(number - 1)
-            if self.get_position(top_right) != "  " and self.piece_color(self.get_position(top_right)) == "w":
+            if self.get_position(top_right) != "  " and self.piece_color(top_right) == "w":
                 movements.append(top_right)
 
         # Take left
         if letter_number < 8:
             top_left = self.find_letter(letter_number + 1) + str(number - 1)
-            if self.get_position(top_left) != "  " and self.piece_color(self.get_position(top_left)) == "w":
+            if self.get_position(top_left) != "  " and self.piece_color(top_left) == "w":
                 movements.append(top_left)
         
         # En Passant
         last_move = self.get_last_move()
-        if (last_move["Piece"] == "wP" and
+        if (letter_number > 1 and last_move["Piece"] == "wP" and
             last_move["From"] == (self.find_letter(letter_number - 1) + str(2)) and
             last_move["To"] == (self.find_letter(letter_number - 1) + str(4))) and int(last_move["To"][1]) == number:
             movements.append(self.find_letter(letter_number - 1) + str(3))
 
-        if (last_move["Piece"] == "wP" and
+        if (letter_number < 8 and last_move["Piece"] == "wP" and
             last_move["From"] == (self.find_letter(letter_number + 1) + str(2)) and
             last_move["To"] == (self.find_letter(letter_number + 1) + str(4))) and int(last_move["To"][1]) == number:
             movements.append(self.find_letter(letter_number + 1) + str(3))
             
         return movements
 
-    # Correlate the to the correct pond function
+    # Correlate the color to the correct pond function
     def find_pond_movements(self, position):
         color = self.piece_color(position)
         movements = []
@@ -369,7 +396,10 @@ class Board:
         if symbol != "K":
             return movements
         
-        if (color == "w" or color == "b") and self.white_king_check:
+        if color == "w" and self.white_king_check:
+            return movements
+        
+        if color == "b" and self.black_king_check:
             return movements
 
         # For easy conditioning to tell the bounds of the board
@@ -414,6 +444,8 @@ class Board:
 
     # Has the system to go to the correct movement finding functions based on position's piece
     def find_movements(self, position):
+        position = self.get_chess_notation(position)
+
         match self.piece_symbol(position):
             case "K":
                 return self.find_king_movements(position)
@@ -429,7 +461,21 @@ class Board:
                 return self.find_pond_movements(position)
             case _:
                 return []
-            
+
+
+
+    # The math to move a piece
+    def move(self, old, new):
+        if len(new) == 3 and new[3] == "e":
+            letter, number = self.split_position(new)
+            if self.get_position(new)[0] == "w":
+                self.set_position(letter + str(number - 1), "  ")
+            if self.get_position(new)[0] == "b":
+                self.set_position(letter + str(number + 1), "  ")
+        self.set_position(new, self.get_position(old))
+        self.set_position(old, "  ")
+        self.set_last_move(old, new)
+
     # Move a piece
     def move_piece(self, old, new):
         old = self.get_chess_notation(old)
@@ -438,15 +484,54 @@ class Board:
             if self.move_lock == True:
                 movements = self.find_movements(old)
                 if new in movements:
-                    self.set_position(new, self.get_position(old))
-                    self.set_position(old, "  ")
-                    self.set_last_move(old, new)
+                    self.move(old, new)
                 else:
                     return False
             else:
-                self.set_position(new, self.get_position(old))
-                self.set_position(old, "  ")
-                self.set_last_move(old, new)
+                self.move(old, new)
+
             return True
         except Exception as e:
             return False
+
+    # Sets the game based on fen notation format
+    # Explination of how fen notation works: https://www.chess.com/terms/fen-chess
+    def set_game(self, fen_notation):
+        board = [[]]
+        board_drawn = False
+        for char in fen_notation:
+            print([row[::-1] for row in board[::-1]])
+            if char == " " or char == "-":
+                board_drawn = True
+                continue
+
+            if board_drawn == True:
+                if char == "w" or char == "b":
+                    self.set_turn(char)
+                    continue
+
+                if char in self.can_castle.keys():
+                    self.can_castle[char] = True
+
+            if char.isdigit():
+                [board[0].append("  ") for _ in range(int(char))]
+                continue
+
+            if char.islower():
+                board[0].append("b" + char.upper())
+                continue
+
+            if char.isupper():
+                board[0].append("w" + char)
+                continue
+
+            if char == "/":
+                board.insert(0, [])
+                continue
+
+        self.board = board
+
+    # Reset to starting position
+    # Starting postition: "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 0"
+    def reset_board(self):
+        self.set_game(self.starting_position)
