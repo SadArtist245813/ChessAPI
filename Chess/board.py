@@ -1,3 +1,5 @@
+from datetime import datetime
+
 class Board:
     def __init__(self):
         self.BOARD_WIDTH = 8
@@ -17,6 +19,14 @@ class Board:
         self.NUMBER_TO_LETTER = {
             1: "A", 2: "B", 3: "C", 4: "D", 5: "E", 6: "F", 7: "G", 8: "H"
         }
+
+        self.event = "Live Chess"
+        self.site = "Python API"
+        self.date = datetime.now().strftime("%y.%m.%d")
+        self.round = 1
+        self.white_player_name = "Player 1"
+        self.black_player_name = "Player 2"
+        self.result = "*"
 
         self.board = [
             ["wR", "wN", "wB", "wK", "wQ", "wB", "wN", "wR"],
@@ -88,13 +98,13 @@ class Board:
             self.move_lock = option            
     
     def set_turn(self, turn):
-        self.turn == turn
+        self.turn = turn
 
     def get_turn(self):
         return self.turn
 
     def get_fen_notation(self):
-        return self.fen_notation
+        pass
 
     # Converts position number to letter
     def find_letter(self, number):
@@ -313,13 +323,13 @@ class Board:
         last_move = self.get_last_move()
         if (letter_number > 1 and last_move["Piece"] == "bP" and
             last_move["From"] == (self.find_letter(letter_number - 1) + str(7)) and
-            last_move["To"] == (self.find_letter(letter_number - 1) + str(5))) and int(last_move["To"][1]) == number:
-            movements.append(self.find_letter(letter_number - 1) + str(6) + "e")
+            last_move["To"] == (self.find_letter(letter_number - 1) + str(5)) and int(last_move["To"][1]) == number):
+            movements.append(self.find_letter(letter_number - 1) + str(number + 1))
 
         if (letter_number < 8 and last_move["Piece"] == "bP" and
             last_move["From"] == (self.find_letter(letter_number + 1) + str(7)) and
-            last_move["To"] == (self.find_letter(letter_number + 1) + str(5))) and int(last_move["To"][1]) == number:
-            movements.append(self.find_letter(letter_number + 1) + str(6) + "e")
+            last_move["To"] == (self.find_letter(letter_number + 1) + str(5)) and int(last_move["To"][1]) == number):
+            movements.append(self.find_letter(letter_number + 1) + str(number + 1))
             
         return movements
 
@@ -356,12 +366,12 @@ class Board:
         last_move = self.get_last_move()
         if (letter_number > 1 and last_move["Piece"] == "wP" and
             last_move["From"] == (self.find_letter(letter_number - 1) + str(2)) and
-            last_move["To"] == (self.find_letter(letter_number - 1) + str(4))) and int(last_move["To"][1]) == number:
+            last_move["To"] == (self.find_letter(letter_number - 1) + str(4)) and int(last_move["To"][1]) == number):
             movements.append(self.find_letter(letter_number - 1) + str(3))
 
         if (letter_number < 8 and last_move["Piece"] == "wP" and
             last_move["From"] == (self.find_letter(letter_number + 1) + str(2)) and
-            last_move["To"] == (self.find_letter(letter_number + 1) + str(4))) and int(last_move["To"][1]) == number:
+            last_move["To"] == (self.find_letter(letter_number + 1) + str(4)) and int(last_move["To"][1]) == number):
             movements.append(self.find_letter(letter_number + 1) + str(3))
             
         return movements
@@ -378,7 +388,7 @@ class Board:
             movements = self.find_black_pond_movements(position)
 
         return movements
-    
+
     # Find possible queen movements (rook + bishop)
     def find_queen_movements(self, position):
         movements = []
@@ -445,7 +455,6 @@ class Board:
     # Has the system to go to the correct movement finding functions based on position's piece
     def find_movements(self, position):
         position = self.get_chess_notation(position)
-
         match self.piece_symbol(position):
             case "K":
                 return self.find_king_movements(position)
@@ -462,16 +471,33 @@ class Board:
             case _:
                 return []
 
+    # Find the movements of every piece on the board
+    def find_all_board_movements(self):
+        board_movements = {}
+        for letter in range(8):
+            for number in range(8):
+                position = self.find_letter(letter + 1) + str(number)
+                movements = self.find_movements(position)
+                board_movements[position] = movements
 
+        return board_movements
 
     # The math to move a piece
     def move(self, old, new):
-        if len(new) == 3 and new[3] == "e":
-            letter, number = self.split_position(new)
-            if self.get_position(new)[0] == "w":
-                self.set_position(letter + str(number - 1), "  ")
-            if self.get_position(new)[0] == "b":
-                self.set_position(letter + str(number + 1), "  ")
+        # Handle en passant capture
+        old_letter, old_number = self.split_position(old)
+        new_letter, new_number = self.split_position(new)
+        old_letter_number = self.find_number(old_letter)
+        new_letter_number = self.find_number(new_letter)
+        
+        piece = self.get_position(old)
+        if piece[1] == "P" and old_letter_number != new_letter_number and self.get_position(new) == "  ":
+            # En passant capture
+            if piece[0] == "w":
+                self.set_position(new_letter + str(new_number - 1), "  ")
+            elif piece[0] == "b":
+                self.set_position(new_letter + str(new_number + 1), "  ")
+        
         self.set_position(new, self.get_position(old))
         self.set_position(old, "  ")
         self.set_last_move(old, new)
@@ -512,17 +538,18 @@ class Board:
 
                 if char in self.can_castle.keys():
                     self.can_castle[char] = True
+                    continue
 
             if char.isdigit():
                 [board[0].append("  ") for _ in range(int(char))]
                 continue
 
             if char.islower():
-                board[0].append("b" + char.upper())
+                board[0].insert(0, "b" + char.upper())
                 continue
 
             if char.isupper():
-                board[0].append("w" + char)
+                board[0].insert(0, "w" + char)
                 continue
 
             if char == "/":
@@ -535,3 +562,65 @@ class Board:
     # Starting postition: "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 0"
     def reset_board(self):
         self.set_game(self.starting_position)
+
+    def match_PGN_headers(self, headers):
+        for key, value in headers.items():
+            '''
+            self.event = "Live Chess"
+            self.site = "Python API"
+            self.date = datetime.now().strftime("%y.%m.%d")
+            self.round = 1
+            self.white_player_name = "Player 1"
+            self.black_player_name = "Player 2"
+            self.result = "*"
+            '''
+
+            print(key, value)
+
+            match(key):
+                case "Event":
+                    self.event = value
+                case "Site":
+                    self.site = value
+                case "Date":
+                    self.date = value
+                case "Round":
+                    self.round = value
+                case "White":
+                    self.white_player_name = value
+                case "Black":
+                    self.black_player_name = value
+                case "Result":
+                    self.result = value
+
+    # Read PGN file using file variable
+    def read_PGN(self, file):
+        moves = ""
+        headers = {}
+        for line in file:
+            # End of file
+            if not line:
+                break
+
+            if line.startswith('[') and line.endswith(']'):
+                tag_end = line.find(' ')
+                tag = line[1:tag_end]
+                tag_value = line[tag_end+2:-1]
+                headers[tag] = tag_value
+        else:
+            pass
+        
+        self.match_PGN_headers(headers)
+        for line in file:
+            moves += line.strip() + " "
+
+        print(headers)
+        print("File Read")
+
+    # Read PGN file using file loaction
+    def import_PGN(self, file_path):
+        with open(file_path, 'r', encoding='utf-8') as file:
+            self.read_PGN(file)
+
+    def export_PGN(self):
+        pass
