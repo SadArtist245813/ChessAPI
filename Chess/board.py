@@ -17,7 +17,7 @@ class Board:
         }
 
         self.NUMBER_TO_LETTER = {
-            1: "A", 2: "B", 3: "C", 4: "D", 5: "E", 6: "F", 7: "G", 8: "H"
+            8: "A", 7: "B", 6: "C", 5: "D", 4: "E", 3: "F", 2: "G", 1: "H"
         }
 
         self.event = "Live Chess"
@@ -161,21 +161,25 @@ class Board:
     def piece_symbol(self, position):
         piece = self.get_position(position)
         return piece[1]
-
-    def check_king_check(self, movements, position):
-        if self.turn == "w":
-            for move in movements:
-                if move == self.white_king_position:
-                    self.white_king_check = True
-                    return True
-
-        if self.turn == "b":
-            for move in movements:
-                if move == self.black_king_position:
-                    self.black_king_check = True
-                    return True
-
+    
+    def check_board_bounds(self, letter_number, number):
+        if (1 <= letter_number <= 8) and (1 <= number <= 8):
+            return True
         return False
+        
+    def check_opposite(self, position1, position2):
+        if self.get_position(position1)[0] == self.get_position(position2)[0]:
+            return False
+        else:
+            return True
+        
+    def check_move_conditions(self, position_1, position_2):    
+        if self.get_position(position_2) != "  ":
+            if self.check_opposite(position_1, position_2):
+                return True
+            else:
+                return False
+        return True
 
     def find_rook_movements(self, position):
         letter, number = self.split_position(position)
@@ -185,34 +189,46 @@ class Board:
         # Up
         for i in range(number + 1, 9):
             move = letter + str(i)
-            if(self.get_position(move) != "  "):
+            if self.get_position(move) == "  ":
+                movements.append(move)
+            elif self.check_move_conditions(position, move):
                 movements.append(move)
                 break
-            movements.append(move)
+            else:
+                break
 
         # Left
         for i in range(letter_number + 1, 9):
             move = self.find_letter(i) + str(number)
-            if(self.get_position(move) != "  "):
+            if self.get_position(move) == "  ":
+                movements.append(move)
+            elif self.check_move_conditions(position, move):
                 movements.append(move)
                 break
-            movements.append(move)
+            else:
+                break
 
         # Down
         for i in range(number - 1, 0, -1):
             move = letter + str(i)
-            if(self.get_position(move) != "  "):
+            if self.get_position(move) == "  ":
+                movements.append(move)
+            elif self.check_move_conditions(position, move):
                 movements.append(move)
                 break
-            movements.append(move)
+            else:
+                break
 
         # Right
         for i in range(letter_number - 1, 0, -1):
             move = self.find_letter(i) + str(number)
-            if(self.get_position(move) != "  "):
+            if self.get_position(move) == "  ":
+                movements.append(move)
+            elif self.check_move_conditions(position, move):
                 movements.append(move)
                 break
-            movements.append(move)
+            else:
+                break
 
         return movements
     
@@ -227,10 +243,15 @@ class Board:
             temp_number = number + i
             if (1 <= temp_letter_number <= 8) and (1 <= temp_number <= 8):
                 move = self.find_letter(temp_letter_number) + str(temp_number)
-                if(self.get_position(move) != "  "):
+                if self.get_position(move) == "  ":
+                    movements.append(move)
+                elif self.check_move_conditions(position, move):
                     movements.append(move)
                     break
-                movements.append(move)
+                else:
+                    break
+            else:
+                break
 
         # up left
         for i in range(1, 9):
@@ -238,10 +259,15 @@ class Board:
             temp_number = number + i
             if (1 <= temp_letter_number <= 8) and (1 <= temp_number <= 8):
                 move = self.find_letter(temp_letter_number) + str(temp_number)
-                if(self.get_position(move) != "  "):
+                if self.get_position(move) == "  ":
+                    movements.append(move)
+                elif self.check_move_conditions(position, move):
                     movements.append(move)
                     break
-                movements.append(move)
+                else:
+                    break
+            else:
+                break
 
         # down left
         for i in range(1, 9):
@@ -249,10 +275,15 @@ class Board:
             temp_number = number - i
             if (1 <= temp_letter_number <= 8) and (1 <= temp_number <= 8):
                 move = self.find_letter(temp_letter_number) + str(temp_number)
-                if(self.get_position(move) != "  "):
+                if self.get_position(move) == "  ":
+                    movements.append(move)
+                elif self.check_move_conditions(position, move):
                     movements.append(move)
                     break
-                movements.append(move)
+                else:
+                    break
+            else:
+                break
 
         # down right
         for i in range(1, 9):
@@ -260,10 +291,15 @@ class Board:
             temp_number = number - i
             if (1 <= temp_letter_number <= 8) and (1 <= temp_number <= 8):
                 move = self.find_letter(temp_letter_number) + str(temp_number)
-                if(self.get_position(move) != "  "):
+                if self.get_position(move) == "  ":
+                    movements.append(move)
+                elif self.check_move_conditions(position, move):
                     movements.append(move)
                     break
-                movements.append(move)
+                else:
+                    break
+            else:
+                break
 
         return movements
         
@@ -281,12 +317,15 @@ class Board:
         temp.append((letter_number + 1, number - 2))
         temp.append((letter_number - 1, number - 2))
         temp.append((letter_number - 2, number - 1))
-        temp.append((letter_number - 2, number + 1))
+        temp.append((letter_number - 2, number + 1))    
 
-        # Check board bounds
-        for key, value in temp:
-            if (1 <= key <= 8) and (1 <= value <= 8):
-                movements.append(self.find_letter(key) + str(value))
+
+        # Check bounds
+        for letter_number, number in temp:
+            if self.check_board_bounds(letter_number, number):
+                move = self.find_letter(letter_number) + str(number)
+                if self.check_move_conditions(position, move):
+                    movements.append(move)
 
         return movements
     
@@ -296,9 +335,8 @@ class Board:
         movements = []
 
         # One forward
-        if number < 8:
-            if self.get_position(letter + str(number + 1)) == "  ":
-                movements.append(letter + str(number + 1))
+        if number < 8 and self.get_position(letter + str(number + 1)) == "  ":
+            movements.append(letter + str(number + 1))
         else:
             return movements
 
@@ -339,8 +377,7 @@ class Board:
         movements = []
 
         # One forward
-        if number > 1:
-            if self.get_position(letter + str(number - 1)) == "  ":
+        if number > 1 and self.get_position(letter + str(number - 1)) == "  ":
                 movements.append(letter + str(number - 1))
         else:
             return movements
@@ -412,43 +449,22 @@ class Board:
         if color == "b" and self.black_king_check:
             return movements
 
-        # For easy conditioning to tell the bounds of the board
-        up = (number + 1 < 9)
-        right = (letter_number - 1 < 9)
-        down = (number - 1 > 0)
-        left = (letter_number + 1 < 9)
+        temp = []
+        temp.append((letter_number + 1, number + 1)) # up left
+        temp.append((letter_number, number + 1)) # up
+        temp.append((letter_number - 1, number + 1)) # up right
+        temp.append((letter_number - 1, number)) # right
+        temp.append((letter_number - 1, number - 1)) # down right
+        temp.append((letter_number, number - 1)) # down
+        temp.append((letter_number + 1, number - 1)) # down left
+        temp.append((letter_number + 1, number)) # left
 
-        # up left
-        if up and left:
-            movements.append(self.find_letter(letter_number + 1) + str(number + 1))
-
-        # up
-        if up:
-            movements.append(letter + str(number + 1))
-
-        # up right
-        if up and right:
-            movements.append(self.find_letter(letter_number - 1) + str(number + 1))
-
-        # right
-        if right:
-            movements.append(self.find_letter(letter_number - 1) + str(number))
-
-        # down right
-        if down and right:
-            movements.append(self.find_letter(letter_number - 1) + str(number    - 1))
-
-        # down
-        if down:
-            movements.append(letter + str(number - 1))
-
-        # down left
-        if down and left:
-            movements.append(self.find_letter(letter_number + 1) + str(number - 1))
-
-        # left
-        if left:
-            movements.append(self.find_letter(letter_number + 1) + str(number))
+        # Check bounds
+        for letter_number, number in temp:
+            if self.check_board_bounds(letter_number, number):
+                move = self.find_letter(letter_number) + str(number)
+                if self.check_move_conditions(position, move):
+                    movements.append(move)
 
         return movements
 
@@ -472,15 +488,50 @@ class Board:
                 return []
 
     # Find the movements of every piece on the board
-    def find_all_board_movements(self):
+    def find_all_possible_moves(self):
         board_movements = {}
-        for letter in range(8):
+        for letter_number in range(8):
+            letter = self.find_letter(letter_number + 1)
             for number in range(8):
-                position = self.find_letter(letter + 1) + str(number)
-                movements = self.find_movements(position)
-                board_movements[position] = movements
+                position = letter + str(number + 1)
+                piece = self.get_position(position)
+                if piece != "  ":
+                    movements = self.find_movements(position)
+                    if movements != []:
+                        board_movements[position] = movements
 
         return board_movements
+    
+    '''
+    def check_king_movements(self, position):
+        movements = self.find_king_movements(position)
+        color = self.piece_color(position)
+        all_movements_sets = self.find_all_possible_moves()
+        for piece_position, movements_set in all_movements_sets.items():
+            piece_color = self.piece_color(piece_position)
+            for move, future_move in movements_set, movements:
+                if color == "w" and  piece_color == "b":
+                    black_king_check = True
+                if color == "b" and  piece_color == "w":
+                    white_king_check = True
+        return movements
+    '''
+
+    def king_in_check(self):
+        white_king_check = False
+        black_king_check = False
+        movement_sets = self.find_all_possible_moves()
+        for piece_position, movements in movement_sets.items():
+            piece_color = self.piece_color(piece_position)
+            for move in movements:
+                if piece_color == "w" and move == self.black_king_position:
+                    black_king_check = True
+                if piece_color == "b" and move == self.white_king_position:
+                    white_king_check = True
+                
+        self.white_king_check = white_king_check
+        self.black_king_check = black_king_check
+
 
     # The math to move a piece
     def move(self, old, new):
@@ -490,17 +541,27 @@ class Board:
         old_letter_number = self.find_number(old_letter)
         new_letter_number = self.find_number(new_letter)
         
-        piece = self.get_position(old)
-        if piece[1] == "P" and old_letter_number != new_letter_number and self.get_position(new) == "  ":
-            # En passant capture
-            if piece[0] == "w":
+        piece_color = self.piece_color(old)
+        piece_symbol = self.piece_symbol(old)
+
+        # En passant capture
+        if piece_symbol == "P" and old_letter_number != new_letter_number and self.get_position(new) == "  ":
+            if piece_color == "w":
                 self.set_position(new_letter + str(new_number - 1), "  ")
-            elif piece[0] == "b":
+            elif piece_color == "b":
                 self.set_position(new_letter + str(new_number + 1), "  ")
-        
+
         self.set_position(new, self.get_position(old))
         self.set_position(old, "  ")
         self.set_last_move(old, new)
+
+        if piece_symbol == "K":
+            if piece_color == "w":
+                self.white_king_position = new
+            if piece_color == "b":
+                self.black_king_position = new
+
+        self.king_in_check()
 
     # Move a piece
     def move_piece(self, old, new):
@@ -511,8 +572,8 @@ class Board:
                 movements = self.find_movements(old)
                 if new in movements:
                     self.move(old, new)
-                else:
-                    return False
+                
+                return False
             else:
                 self.move(old, new)
 
@@ -562,6 +623,9 @@ class Board:
     # Starting postition: "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 0"
     def reset_board(self):
         self.set_game(self.starting_position)
+
+    def algebraic_notation(self):
+        pass
 
     def match_PGN_headers(self, headers):
         for key, value in headers.items():
