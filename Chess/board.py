@@ -95,7 +95,7 @@ class Board:
             else:
                 self.move_lock = True
         else:
-            self.move_lock = option            
+            self.move_lock = option       
     
     def set_turn(self, turn):
         self.turn = turn
@@ -129,7 +129,7 @@ class Board:
     def split_position(self, position):
         return position[0], int(position[1])
 
-    # Return board position piece
+    # Return board position's piece
     def get_position(self, position):
         letter, number = self.split_position(position)
         letter_number = self.find_number(letter)
@@ -161,6 +161,13 @@ class Board:
     def piece_symbol(self, position):
         piece = self.get_position(position)
         return piece[1]
+
+    # Change board turn
+    def change_turn(self):
+        if self.turn == "w":
+            self.turn = "b"
+        else:
+            self.turn = "w"                
     
     def check_board_bounds(self, letter_number, number):
         if (1 <= letter_number <= 8) and (1 <= number <= 8):
@@ -317,8 +324,7 @@ class Board:
         temp.append((letter_number + 1, number - 2))
         temp.append((letter_number - 1, number - 2))
         temp.append((letter_number - 2, number - 1))
-        temp.append((letter_number - 2, number + 1))    
-
+        temp.append((letter_number - 2, number + 1))
 
         # Check bounds
         for letter_number, number in temp:
@@ -551,16 +557,19 @@ class Board:
             elif piece_color == "b":
                 self.set_position(new_letter + str(new_number + 1), "  ")
 
+        # Move piece
         self.set_position(new, self.get_position(old))
         self.set_position(old, "  ")
         self.set_last_move(old, new)
 
+        # Track king position
         if piece_symbol == "K":
             if piece_color == "w":
                 self.white_king_position = new
             if piece_color == "b":
                 self.black_king_position = new
 
+        # Set king check status
         self.king_in_check()
 
     # Move a piece
@@ -569,16 +578,25 @@ class Board:
         new = self.get_chess_notation(new)
         try:
             if self.move_lock == True:
+                # Check if correct turn
+                piece_color = self.piece_color(old)
+                if piece_color != self.turn:
+                    return False
+
+                # Check if can properly move
                 movements = self.find_movements(old)
                 if new in movements:
                     self.move(old, new)
-                
-                return False
+                    self.change_turn()
+                else:
+                    return False
             else:
+                # Move without conditions (only for: move_lock = Flase)
                 self.move(old, new)
 
             return True
         except Exception as e:
+            print(f"\"On Move\" Error: {e}")
             return False
 
     # Sets the game based on fen notation format
@@ -623,6 +641,7 @@ class Board:
     # Starting postition: "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 0"
     def reset_board(self):
         self.set_game(self.starting_position)
+        self.turn = "w"
 
     def algebraic_notation(self):
         pass
