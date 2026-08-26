@@ -47,8 +47,8 @@ class Board:
         self.can_castle = { "K": True, "Q": True, "k": True, "q": True }
         self.game_moves = 0
         self.rule_50_move = 0
-        self.white_king_position = "D1"
-        self.black_king_position = "D8"
+        self.white_king_position = "E1"
+        self.black_king_position = "E8"
         self.white_king_check = False
         self.black_king_check = False
 
@@ -449,12 +449,6 @@ class Board:
         if symbol != "K":
             return movements
         
-        if color == "w" and self.white_king_check:
-            return movements
-        
-        if color == "b" and self.black_king_check:
-            return movements
-
         temp = []
         temp.append((letter_number + 1, number + 1)) # up left
         temp.append((letter_number, number + 1)) # up
@@ -464,6 +458,16 @@ class Board:
         temp.append((letter_number, number - 1)) # down
         temp.append((letter_number + 1, number - 1)) # down left
         temp.append((letter_number + 1, number)) # left
+        
+        # Check if the king can move out of check (if in check)
+        if color == "w" and self.white_king_check or color == "b" and self.black_king_check:
+            movement_sets = self.find_all_possible_moves()
+            for piece_position, movements in movement_sets.items():
+                piece_color = self.piece_color(piece_position)
+                for move in movements:
+                    for possible_move in temp:
+                        if move == possible_move and piece_color != color:
+                            temp.remove(possible_move)
 
         # Check bounds
         for letter_number, number in temp:
@@ -472,6 +476,7 @@ class Board:
                 if self.check_move_conditions(position, move):
                     movements.append(move)
 
+        print(f"King {color} Movements: {movements}")
         return movements
 
     # Has the system to go to the correct movement finding functions based on position's piece
@@ -507,21 +512,6 @@ class Board:
                         board_movements[position] = movements
 
         return board_movements
-    
-    '''
-    def check_king_movements(self, position):
-        movements = self.find_king_movements(position)
-        color = self.piece_color(position)
-        all_movements_sets = self.find_all_possible_moves()
-        for piece_position, movements_set in all_movements_sets.items():
-            piece_color = self.piece_color(piece_position)
-            for move, future_move in movements_set, movements:
-                if color == "w" and  piece_color == "b":
-                    black_king_check = True
-                if color == "b" and  piece_color == "w":
-                    white_king_check = True
-        return movements
-    '''
 
     def king_in_check(self):
         white_king_check = False
@@ -532,8 +522,12 @@ class Board:
             for move in movements:
                 if piece_color == "w" and move == self.black_king_position:
                     black_king_check = True
-                if piece_color == "b" and move == self.white_king_position:
+                    print(f"Black King in Check by {piece_position}")
+                    print(f"Black King Position: {self.black_king_position}")
+                if piece_color == "b" and move == self.white_king_position: 
                     white_king_check = True
+                    print(f"White King in Check by {piece_position}")
+                    print(f"White King Position: {self.white_king_position}")
                 
         self.white_king_check = white_king_check
         self.black_king_check = black_king_check
