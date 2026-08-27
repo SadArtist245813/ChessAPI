@@ -459,16 +459,18 @@ class Board:
         temp.append((letter_number + 1, number - 1)) # down left
         temp.append((letter_number + 1, number)) # left
         
+        
         # Check if the king can move out of check (if in check)
         if color == "w" and self.white_king_check or color == "b" and self.black_king_check:
-            movement_sets = self.find_all_possible_moves()
+            movement_sets = self.find_all_possible_moves(king_call=True)
             for piece_position, movements in movement_sets.items():
                 piece_color = self.piece_color(piece_position)
                 for move in movements:
                     for possible_move in temp:
+                        print({"Move": move, "Possible Move": possible_move, "Piece Color": piece_color, "Color": color})
                         if move == possible_move and piece_color != color:
                             temp.remove(possible_move)
-
+        
         # Check bounds
         for letter_number, number in temp:
             if self.check_board_bounds(letter_number, number):
@@ -476,7 +478,6 @@ class Board:
                 if self.check_move_conditions(position, move):
                     movements.append(move)
 
-        print(f"King {color} Movements: {movements}")
         return movements
 
     # Has the system to go to the correct movement finding functions based on position's piece
@@ -499,14 +500,14 @@ class Board:
                 return []
 
     # Find the movements of every piece on the board
-    def find_all_possible_moves(self):
+    def find_all_possible_moves(self, king_call=False):
         board_movements = {}
         for letter_number in range(8):
             letter = self.find_letter(letter_number + 1)
             for number in range(8):
                 position = letter + str(number + 1)
                 piece = self.get_position(position)
-                if piece != "  ":
+                if piece != "  " and (not king_call or self.piece_symbol(position) != "K"):
                     movements = self.find_movements(position)
                     if movements != []:
                         board_movements[position] = movements
